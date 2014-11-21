@@ -1,5 +1,19 @@
 import random
-random.seed(2)
+import time
+
+class RandomGraph:
+    def __init__(self,vertex_nr,filling,seed):
+        random.seed(seed)
+        self.vertex_nr = vertex_nr
+        self.adjmatrix = [[0 for x in xrange(vertex_nr)] for x in xrange(vertex_nr)] 
+        for x in range(vertex_nr):
+            for y in range(x+1,vertex_nr):
+                if random.random() > filling:
+                    el = 0
+                else:
+                    el = 1
+                self.adjmatrix[x][y] = el
+                self.adjmatrix[y][x] = el
 
 def printm(matrix):
     for r in range(len(matrix)):
@@ -13,7 +27,7 @@ def neighbors(node, adjmatrix):
             list.append(x)
     return list
     
-def goodColoring(adjmatrix, coloring):
+def q_good_coloring(adjmatrix, coloring):
     for node in range(len(adjmatrix)):
         neigh = neighbors(node,adjmatrix)
         clist = []
@@ -22,7 +36,7 @@ def goodColoring(adjmatrix, coloring):
                 return False
     return True
     
-def nextColoring(coloring):
+def next_coloring(coloring):
     max = len(coloring)-1
     for x in range(len(coloring)):
         if coloring[x] < len(coloring)-1:
@@ -32,7 +46,17 @@ def nextColoring(coloring):
             coloring[x] = 0
     return coloring
 
-def colorNr(coloring):
+def next_coloring(coloring,kmax):
+    """Return next, at most k-coloring"""
+    for x in range(len(coloring)):
+        if coloring[x] < kmax-1:
+            coloring[x] = coloring[x]+1
+            break
+        else:
+            coloring[x] = 0
+    return coloring
+
+def nr_of_colors(coloring):
     colorlist = []
     for c in coloring:
         if c in colorlist:
@@ -40,20 +64,41 @@ def colorNr(coloring):
         else:
             colorlist.append(c)
     return len(colorlist)
-    
-def BFcoloring(adjmatrix):
-    coloring = [0 for x in range(len(adjmatrix))]
-    minColorNr = len(coloring)
-    mincoloring = list(range(minColorNr))
-    for x in range(minColorNr**minColorNr):
-        if colorNr(coloring) < minColorNr:
-            if goodColoring(adjmatrix,coloring):
-                minColorNr = colorNr(coloring)
+
+def col_bf_k(adjmatrix,k):
+    """Attempts to find k-coloring of given adjmatrix"""
+    vertex_nr = len(adjmatrix)
+    qgood = False
+    coloring = [0 for x in range(vertex_nr)]
+    for x in range(vertex_nr**k):
+        if q_good_coloring(adjmatrix,coloring):
+            qgood = True
+            break
+        coloring = next_coloring(coloring,k)
+    return [qgood,coloring]
+
+def col_bf_k_all(adjmatrix):
+    """Return min coloring"""
+    vertex_nr = len(adjmatrix)
+    for k in range(1,vertex_nr+1):
+        coloring = col_bf_k(adjmatrix,k)
+        if coloring[0]:
+            return coloring
+
+def col_bf(adjmatrix):
+    vertex_nr = len(adjmatrix)
+    coloring = [0 for x in range(vertex_nr)]
+    minnr_of_colors = vertex_nr
+    mincoloring = list(range(minnr_of_colors))
+    for x in range(minnr_of_colors**minnr_of_colors):
+        if nr_of_colors(coloring) < minnr_of_colors:
+            if q_good_coloring(adjmatrix,coloring):
+                minnr_of_colors = nr_of_colors(coloring)
                 mincoloring = coloring[:]
-        coloring = nextColoring(coloring)
+        coloring = next_coloring(coloring,vertex_nr)
     return mincoloring
 
-def GreedyColoring(adjmatrix):
+def col_greedy(adjmatrix):
     coloring = [-1 for x in range(len(adjmatrix))]
     for node in range(len(adjmatrix)):
         for c in range(len(adjmatrix)):
@@ -69,22 +114,15 @@ def GreedyColoring(adjmatrix):
     
     return coloring
     
-adjmatrix  = [[0 for x in xrange(5)] for x in xrange(5)] 
-coloring = [0,1,2,0,1]
-for x in range(5):
-    adjmatrix[x][x] = 0
-    for y in range(x+1,5):
-        el = random.randint(0,1)
-        adjmatrix[x][y] = el
-        adjmatrix[y][x] = el
+graph = RandomGraph(5,.5,3)
         
-#printm(adjmatrix)
-
-#print(neighbors(0,adjmatrix))
-#print(goodColoring(adjmatrix,coloring))
-printm(adjmatrix)
+printm(graph.adjmatrix)
 print('')
-print(BFcoloring(adjmatrix))
-print(GreedyColoring(adjmatrix))
-print(goodColoring(adjmatrix,GreedyColoring(adjmatrix)))
-#print(goodColoring(adjmatrix,[2,1,0,1,0]))
+timestart=time.clock()
+coloring = col_bf(graph.adjmatrix)
+print([q_good_coloring(graph.adjmatrix,coloring),coloring],time.clock()-timestart)
+timestart=time.clock()
+print(col_bf_k_all(graph.adjmatrix),time.clock()-timestart)
+timestart=time.clock()
+coloring = col_greedy(graph.adjmatrix)
+print([q_good_coloring(graph.adjmatrix,coloring),col_greedy(graph.adjmatrix)],time.clock()-timestart)
