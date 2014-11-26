@@ -8,20 +8,58 @@ class RandomGraph:
     def __init__(self, vertex_nr, filling, seed):
         random.seed(seed)
         self.vertex_nr = vertex_nr
-        self.adjmatrix = [[0 for x in xrange(vertex_nr)]
-                          for x in xrange(vertex_nr)]
+        self.adjlist = {vertex: [] for vertex in range(vertex_nr)}
+
         for x in range(vertex_nr):
-            for y in range(x + 1, vertex_nr):
-                if random.random() > filling:
-                    el = 0
-                else:
-                    el = 1
-                self.adjmatrix[x][y] = el
-                self.adjmatrix[y][x] = el
+            for y in range(int(vertex_nr / 2)):  # int( * filling * 0.5)):
+                if random.random() <= filling and x != y:
+                    if x in self.adjlist:
+                        if y not in self.adjlist[x]:
+                            self.adjlist[x].append(y)
+                    else:
+                        self.adjlist[x] = [y]
+
+                    if y in self.adjlist:
+                        if x not in self.adjlist[y]:
+                            self.adjlist[y].append(x)
+                    else:
+                        self.adjlist[y] = [x]
 
     def printm(self):
-        for row in self.adjmatrix:
-            print(row)
+        for vertex in self.adjlist:
+            print(vertex, self.adjlist[vertex])
+
+    def neighbours(self, vertex):
+        return self.adjlist[vertex]
+
+    def is_coloring_good(self, coloring):
+        for node in self.adjlist:
+            neigh_colors = [coloring[v] for v in self.adjlist[node]]
+            if coloring[node] in neigh_colors:
+                return False
+        return True
+
+    def print_coloring(self, coloring, time=None):
+        if time:
+            print('Properly:', self.is_coloring_good(coloring), coloring,
+                  time, '[s]')
+        else:
+            print('Properly:', self.is_coloring_good(coloring), coloring)
+
+    def col_greedy(self):
+        "Greedy alghoritm for graph coloring"
+        coloring = {vertex: 0 for vertex in self.adjlist}
+        for vtx in coloring:
+            neigh_colors = [coloring[v] for v in self.adjlist[vtx]]
+            while coloring[vtx] in neigh_colors:
+                coloring[vtx] += 1
+                neigh_colors = [coloring[v] for v in self.adjlist[vtx]]
+        return coloring
+
+    def col_bf(self):
+        coloring = {}
+
+        return coloring
 
 
 class TestInstance(RandomGraph):
@@ -30,15 +68,23 @@ class TestInstance(RandomGraph):
         with open(filename, "r") as instance_file:
             instance_file = instance_file.readlines()
 
-            self.vertex_nr = int(instance_file[0])
-            self.adjmatrix = [[0 for i in range(0, self.vertex_nr + 1)]
-                              for j in range(0, self.vertex_nr + 1)]
+            super(TestInstance, self).__init__(int(instance_file[0]), 0, 0)
+
+            print(self.adjlist)
 
             for line in instance_file[1:]:
                 try:
                     x, y = (int(i) for i in line.split())
-                    self.adjmatrix[x][y] = 1
-                    self.adjmatrix[y][x] = 1
+
+                    if x in self.adjlist:
+                        self.adjlist[x].append(y)
+                    else:
+                        self.adjlist[x] = [y]
+
+                    if y in self.adjlist:
+                        self.adjlist[y].append(x)
+                    else:
+                        self.adjlist[y] = [x]
                 except ValueError:
                     print("Invalid value in line %d : <%s>" %
                           (instance_file.index(line), line)
@@ -64,7 +110,7 @@ def q_good_coloring(adjmatrix, coloring):
         for v in neigh:
             if coloring[v] == coloring[node]:
                 return False
-    return True
+        return True
 
 
 def next_coloring(coloring, kmax):
@@ -80,10 +126,8 @@ def next_coloring(coloring, kmax):
 
 def nr_of_colors(coloring):
     colorlist = []
-    for c in coloring:
-        if c in colorlist:
-            continue
-        else:
+    for c in coloring.values():
+        if c not in colorlist:
             colorlist.append(c)
     return len(colorlist)
 
@@ -127,23 +171,6 @@ def col_bf(adjmatrix):
         print("minnr_of_colors", minnr_of_colors)
 
 
-def col_greedy(adjmatrix):
-    coloring = [-1 for x in range(len(adjmatrix))]
-    for node in range(len(adjmatrix)):
-        for c in range(len(adjmatrix)):
-            badcolor = False
-            for n in neighbors(node, adjmatrix):
-                if c == coloring[n]:
-                    badcolor = True
-            if badcolor:
-                continue
-            else:
-                coloring[node] = c
-                break
-
-    return coloring
-
-
 if __name__ == "__main__":
     argvparser = argparse.ArgumentParser(description="Testing alghoritms for\
                                          graph coloring problem"
@@ -153,22 +180,15 @@ if __name__ == "__main__":
                             default=None)
 
     for filename in argvparser.parse_args().filename:
-        graph = TestInstance(filename)
+        graph = RandomGraph(6, 0.5, 13)  # TestInstance(filename)
         graph.printm()
         print('')
 
-        timestart = time.clock()
-        coloring = col_bf(graph.adjmatrix)
-        print([q_good_coloring(graph.adjmatrix, coloring), coloring],
-              time.clock() - timestart)
-
-        timestart = time.clock()
-        print(col_bf_k_all(graph.adjmatrix), time.clock() - timestart)
-
-        timestart = time.clock()
-        coloring = col_greedy(graph.adjmatrix)
-        print([q_good_coloring(graph.adjmatrix, coloring),
-              col_greedy(graph.adjmatrix)], time.clock() - timestart)
+        timer_start = time.clock()
+        coloring = graph.col_greedy()
+        timer_stop = time.clock() - timer_start
+        print("greedy:", nr_of_colors(coloring), 'colors')
+        graph.print_coloring(coloring, timer_stop)
 
 specs = '''\n\nKolorowanie grafów. Możliwe algorytmy:
     -genetyczny
