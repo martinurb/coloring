@@ -5,14 +5,15 @@ import argparse
 
 
 class RandomGraph:
+    """Generates random graph of specified vertex number and filling
+    represented as adjacency list"""
     def __init__(self, vertex_nr, filling, seed):
         random.seed(seed)
         self.vertex_nr = vertex_nr
-        self.adjlist = {vertex: [] for vertex in range(1, vertex_nr+1)}
+        self.adjlist = {vertex: [] for vertex in range(1, vertex_nr + 1)}
                                     # assuming we don't use 0 vertex
-
         for x in range(vertex_nr):
-            for y in range(int(vertex_nr / 2)):  # int( * filling * 0.5)):
+            for y in range(int(vertex_nr / 2)):
                 if random.random() <= filling and x != y:
                     if x in self.adjlist:
                         if y not in self.adjlist[x]:
@@ -26,7 +27,9 @@ class RandomGraph:
                     else:
                         self.adjlist[y] = [x]
         if len(self.adjlist) != self.vertex_nr:
-            raise ValueError("Graph not loaded properly")
+            raise ValueError("Graph not loaded properly. %d nodes of %d" %
+                             (len(self.adjlist), self.vertex_nr)
+                             )
 
     def printm(self):
         for vertex in self.adjlist:
@@ -36,11 +39,7 @@ class RandomGraph:
         return self.adjlist[vertex]
 
     def is_coloring_good(self, coloring):
-        for node in self.adjlist:
-            neigh_colors = [coloring[v] for v in self.adjlist[node]]
-            if coloring[node] in neigh_colors:
-                return False
-        return True
+        return is_coloring_good(self, coloring)
 
     def print_coloring(self, coloring, time=None):
         if time:
@@ -60,17 +59,26 @@ class RandomGraph:
         return coloring
 
     def coloring_bf(self):
-        "Bruteforce alghoritm for graph coloring"
-        coloring = {}
-        min_colors = max([len(self.adjlist[v]) for v in self.adjlist]) + 1
-        print('min col:', min_colors)
-        for i in range(min_colors, self.vertex_nr):
-            pass
-        return coloring
+        """Bruteforce alghoritm for graph coloring
+        Time of execution noticeable for nodes > 6 on core i5"""
+        coloring = {v: 0 for v in self.adjlist}
+        minnr_of_colors = self.vertex_nr
+        mincoloring = {k: v for k, v in coloring.items()}
+        try:
+            for x in range(minnr_of_colors ** minnr_of_colors):
+                if nr_of_colors(coloring) < minnr_of_colors:
+                    if is_coloring_good(self, coloring):
+                        minnr_of_colors = nr_of_colors(coloring)
+                        # import pdb; pdb.set_trace()
+                        mincoloring = {k: v for k, v in coloring.items()}
+                coloring = next_coloring(coloring, self.vertex_nr)
+            return mincoloring
+        except OverflowError:
+            print("minnr_of_colors", minnr_of_colors)
 
 
 class TestInstance(RandomGraph):
-
+    """Loads graph from specified file to adjacency list"""
     def __init__(self, filename):
         with open(filename, "r") as instance_file:
             instance_file = instance_file.readlines()
@@ -99,9 +107,6 @@ class TestInstance(RandomGraph):
                           (instance_file.index(line), line)
                           )
 
-        if len(self.adjlist) != self.vertex_nr:
-            raise ValueError("Graph not loaded properly")
-
 
 def nr_of_colors(coloring):
     colorlist = []
@@ -109,6 +114,25 @@ def nr_of_colors(coloring):
         if c not in colorlist:
             colorlist.append(c)
     return len(colorlist)
+
+
+def is_coloring_good(graph, coloring):
+    for node in graph.adjlist:
+        neigh_colors = [coloring[v] for v in graph.adjlist[node]]
+        if coloring[node] in neigh_colors:
+            return False
+    return True
+
+
+def next_coloring(coloring, kmax):
+    """Return next, at most k-coloring"""
+    for x in range(1, len(coloring)+1):
+        if coloring[x] < kmax - 1:
+            coloring[x] += 1
+            break
+        else:
+            coloring[x] = 0
+    return coloring
 
 
 def neighbors(node, adjmatrix):
@@ -127,17 +151,6 @@ def q_good_coloring(adjmatrix, coloring):
             if coloring[v] == coloring[node]:
                 return False
         return True
-
-
-def next_coloring(coloring, kmax):
-    """Return next, at most k-coloring"""
-    for x in range(len(coloring)):
-        if coloring[x] < kmax - 1:
-            coloring[x] = coloring[x] + 1
-            break
-        else:
-            coloring[x] = 0
-    return coloring
 
 
 def col_bf_k(adjmatrix, k):
