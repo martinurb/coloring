@@ -8,7 +8,8 @@ class RandomGraph:
     def __init__(self, vertex_nr, filling, seed):
         random.seed(seed)
         self.vertex_nr = vertex_nr
-        self.adjlist = {vertex: [] for vertex in range(vertex_nr)}
+        self.adjlist = {vertex: [] for vertex in range(1, vertex_nr+1)}
+                                    # assuming we don't use 0 vertex
 
         for x in range(vertex_nr):
             for y in range(int(vertex_nr / 2)):  # int( * filling * 0.5)):
@@ -24,6 +25,8 @@ class RandomGraph:
                             self.adjlist[y].append(x)
                     else:
                         self.adjlist[y] = [x]
+        if len(self.adjlist) != self.vertex_nr:
+            raise ValueError("Graph not loaded properly")
 
     def printm(self):
         for vertex in self.adjlist:
@@ -56,9 +59,13 @@ class RandomGraph:
                 neigh_colors = [coloring[v] for v in self.adjlist[vtx]]
         return coloring
 
-    def col_bf(self):
+    def coloring_bf(self):
+        "Bruteforce alghoritm for graph coloring"
         coloring = {}
-
+        min_colors = max([len(self.adjlist[v]) for v in self.adjlist]) + 1
+        print('min col:', min_colors)
+        for i in range(min_colors, self.vertex_nr):
+            pass
         return coloring
 
 
@@ -69,8 +76,6 @@ class TestInstance(RandomGraph):
             instance_file = instance_file.readlines()
 
             super(TestInstance, self).__init__(int(instance_file[0]), 0, 0)
-
-            print(self.adjlist)
 
             for line in instance_file[1:]:
                 try:
@@ -93,6 +98,17 @@ class TestInstance(RandomGraph):
                     print("Invalid value [too large] on line %d : <%s>" %
                           (instance_file.index(line), line)
                           )
+
+        if len(self.adjlist) != self.vertex_nr:
+            raise ValueError("Graph not loaded properly")
+
+
+def nr_of_colors(coloring):
+    colorlist = []
+    for c in coloring.values():
+        if c not in colorlist:
+            colorlist.append(c)
+    return len(colorlist)
 
 
 def neighbors(node, adjmatrix):
@@ -122,14 +138,6 @@ def next_coloring(coloring, kmax):
         else:
             coloring[x] = 0
     return coloring
-
-
-def nr_of_colors(coloring):
-    colorlist = []
-    for c in coloring.values():
-        if c not in colorlist:
-            colorlist.append(c)
-    return len(colorlist)
 
 
 def col_bf_k(adjmatrix, k):
@@ -180,15 +188,24 @@ if __name__ == "__main__":
                             default=None)
 
     for filename in argvparser.parse_args().filename:
-        graph = RandomGraph(6, 0.5, 13)  # TestInstance(filename)
+        graph = TestInstance(filename)
         graph.printm()
         print('')
 
         timer_start = time.clock()
         coloring = graph.col_greedy()
         timer_stop = time.clock() - timer_start
+
         print("greedy:", nr_of_colors(coloring), 'colors')
         graph.print_coloring(coloring, timer_stop)
+
+        timer_start = time.clock()
+        coloring = graph.coloring_bf()
+        timer_stop = time.clock() - timer_start
+
+        print("bruteforce:", nr_of_colors(coloring), 'colors')
+        graph.print_coloring(coloring, timer_stop)
+
 
 specs = '''\n\nKolorowanie grafów. Możliwe algorytmy:
     -genetyczny
