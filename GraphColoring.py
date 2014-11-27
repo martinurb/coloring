@@ -48,8 +48,8 @@ class RandomGraph:
         else:
             print('Properly:', self.is_coloring_good(coloring), coloring)
 
-    def col_greedy(self):
-        "Greedy alghoritm for graph coloring"
+    def color_greedy(self):
+        "greedy alghoritm for graph coloring"
         coloring = {vertex: 0 for vertex in self.adjlist}
         for vtx in coloring:
             neigh_colors = [coloring[v] for v in self.adjlist[vtx]]
@@ -58,9 +58,9 @@ class RandomGraph:
                 neigh_colors = [coloring[v] for v in self.adjlist[vtx]]
         return coloring
 
-    def coloring_bf(self):
-        """Bruteforce alghoritm for graph coloring
-        Time of execution noticeable for nodes > 6 on core i5"""
+    def color_bf(self):
+        """bruteforce alghoritm for graph coloring
+        time of execution noticeable for nodes > 6 on core i5"""
         coloring = {v: 0 for v in self.adjlist}
         minnr_of_colors = self.vertex_nr
         mincoloring = {k: v for k, v in coloring.items()}
@@ -69,12 +69,24 @@ class RandomGraph:
                 if nr_of_colors(coloring) < minnr_of_colors:
                     if is_coloring_good(self, coloring):
                         minnr_of_colors = nr_of_colors(coloring)
-                        # import pdb; pdb.set_trace()
                         mincoloring = {k: v for k, v in coloring.items()}
                 coloring = next_coloring(coloring, self.vertex_nr)
             return mincoloring
         except OverflowError:
             print("minnr_of_colors", minnr_of_colors)
+
+    def color_lf(self):
+        """Largest First algorithm for graph coloring"""
+        coloring = {v: 0 for v in self.adjlist}
+        nodes_by_deg = sorted(self.adjlist.items(), key=lambda x: len(x[1]))
+        largest_first = [vtx[0] for vtx in nodes_by_deg[::-1]]
+        for vtx in largest_first:
+            neigh_colors = [coloring[v] for v in self.adjlist[vtx]]
+            while coloring[vtx] in neigh_colors:
+                coloring[vtx] += 1
+                neigh_colors = [coloring[v] for v in self.adjlist[vtx]]
+#        import pdb; pdb.set_trace()
+        return coloring
 
 
 class TestInstance(RandomGraph):
@@ -206,19 +218,25 @@ if __name__ == "__main__":
         print('')
 
         timer_start = time.clock()
-        coloring = graph.col_greedy()
+        coloring = graph.color_greedy()
         timer_stop = time.clock() - timer_start
 
         print("greedy:", nr_of_colors(coloring), 'colors')
         graph.print_coloring(coloring, timer_stop)
 
         timer_start = time.clock()
-        coloring = graph.coloring_bf()
+        coloring = graph.color_bf()
         timer_stop = time.clock() - timer_start
 
         print("bruteforce:", nr_of_colors(coloring), 'colors')
         graph.print_coloring(coloring, timer_stop)
 
+        timer_start = time.clock()
+        coloring = graph.color_lf()
+        timer_stop = time.clock() - timer_start
+
+        print("LF:", nr_of_colors(coloring), 'colors')
+        graph.print_coloring(coloring, timer_stop)
 
 specs = '''\n\nKolorowanie grafów. Możliwe algorytmy:
     -genetyczny
