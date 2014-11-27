@@ -23,6 +23,27 @@ class RandomGraph:
         for row in self.adjmatrix:
             print(row)
 
+    def neighbors(self, vertex):
+        neighbors = [i for i in range(len(self.adjmatrix))
+                     if self.adjmatrix[vertex][i] and i != vertex]
+        return neighbors
+
+    def color_lf(self):
+        """Largest First algorithm for graph coloring"""
+        nodes = [node for node in range(len(self.adjmatrix))]
+        coloring = [0 for node in nodes]
+        nodes_by_deg = sorted(nodes,
+                              key=lambda x: len(neighbors(x, self.adjmatrix))
+                              )
+        largest_first = [vtx for vtx in nodes_by_deg[::-1]]
+        for vtx in largest_first:
+#            import pdb; pdb.set_trace()
+            neigh_colors = [coloring[v] for v in self.neighbors(vtx)]
+            while coloring[vtx] in neigh_colors:
+                coloring[vtx] += 1
+                neigh_colors = [coloring[v] for v in self.neighbors(vtx)]
+        return coloring
+
 
 class TestInstance(RandomGraph):
 
@@ -169,6 +190,13 @@ if __name__ == "__main__":
         coloring = col_greedy(graph.adjmatrix)
         print([q_good_coloring(graph.adjmatrix, coloring),
               col_greedy(graph.adjmatrix)], time.clock() - timestart)
+
+        time_start = time.clock()
+        coloring = graph.color_lf()
+        time_stop = time.clock() - time_start
+        print([q_good_coloring(graph.adjmatrix, coloring),
+              col_greedy(graph.adjmatrix)], time.clock() - timestart)
+
 
 specs = '''\n\nKolorowanie grafów. Możliwe algorytmy:
     -genetyczny
