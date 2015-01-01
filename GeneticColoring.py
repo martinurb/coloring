@@ -1,0 +1,2 @@
+class GeneticColoring:
+    pass
