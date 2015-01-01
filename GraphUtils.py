@@ -80,3 +80,14 @@ def col_bf(adjmatrix):
         return mincoloring
     except OverflowError:
         print("minnr_of_colors", minnr_of_colors)
+
+
+def color_greedy(graph):
+    "greedy alghoritm for graph coloring"
+    coloring = {vertex: 0 for vertex in graph.adjlist}
+    for vtx in coloring:
+        neigh_colors = [coloring[v] for v in graph.adjlist[vtx]]
+        while coloring[vtx] in neigh_colors:
+            coloring[vtx] += 1
+            neigh_colors = [coloring[v] for v in graph.adjlist[vtx]]
+    return coloring

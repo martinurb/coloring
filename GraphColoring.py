@@ -4,6 +4,7 @@ import random
 import time
 import argparse
 from GraphUtils import *
+from GeneticColoring import GeneticColoring
 
 
 class RandomGraph:
@@ -159,6 +160,10 @@ if __name__ == "__main__":
 
         print("LF:", nr_of_colors(coloring), 'colors')
         graph.print_coloring(coloring, timer_stop)
+
+        meh = GeneticColoring(graph)
+        code = meh.encode(meh.naive_coloring)
+        specimen = meh.decode(code)
 
 specs = '''\n\nKolorowanie grafów. Możliwe algorytmy:
     -genetyczny
