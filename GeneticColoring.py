@@ -1,6 +1,7 @@
+# -*- coding=utf8 -*-
 from GraphUtils import *
 import math
-from random import random, randint
+from random import random, randint, choice
 
 
 class GeneticColoring:
@@ -12,7 +13,7 @@ class GeneticColoring:
         self.max_colors = nr_of_colors(self.naive_coloring)
 
         self.adjlist = graph.adjlist
-        self.vertex_nr = graph.vertex_nr
+        self.vertex_nr = len(self.adjlist)
 
         self.allel_size = int(math.ceil(math.log(self.max_colors, 2)))
         self.allels_nr = max(self.adjlist.keys())
@@ -53,7 +54,7 @@ class GeneticColoring:
                 pos += self.allel_size
         return specimen
 
-    def crossover(self, chromosome1, chromosome2):
+    def str_crossover(self, chromosome1, chromosome2):
         '''Return child - crossover of two specimens'''
         if not len(chromosome1) == len(chromosome2) == self.chromosome_size:
             raise ValueError('chromosomes of length %d, %d instead of %d' %
@@ -61,19 +62,48 @@ class GeneticColoring:
                               len(chromosome2),
                               self.allels_nr)
                              )
+        if not (isinstance(chromosome1, str) and isinstance(chromosome2, str)):
+            raise KeyError("chromosomes should be passed encoded as strings")
         splicing_point = randint(0, self.chromosome_size)
-        new_one = chromosome1[:splicing_point] + chromosome2[splicing_point:]
+        child = chromosome1[:splicing_point] + chromosome2[splicing_point:]
 
         if splicing_point < self.chromosome_size / 2:  # add 2nd splicing point
             second_splice = randint(splicing_point, self.chromosome_size)
-            new_one = new_one[:second_splice] + chromosome1[second_splice:]
+            child = child[:second_splice] + chromosome1[second_splice:]
+        return child
 
-        return new_one
+    def crossover(self, chromosome1, chromosome2):
+        '''Return child - crossover of two specimens, provided as dicts'''
+        if not len(chromosome1) == len(chromosome2) == self.vertex_nr:
+            raise ValueError('chromosomes of length %d, %d instead of %d' %
+                             (len(chromosome1),
+                              len(chromosome2),
+                              self.vertex_nr)
+                             )
+        splice_point = randint(0, self.vertex_nr)
+
+        if splice_point < self.vertex_nr / 2:  # add 2nd splicing point
+            second_splice = randint(splice_point, self.chromosome_size)
+        else:
+            second_splice = self.vertex_nr
+
+        child = {i: chromosome1[i] for i in chromosome1.keys()}
+        for i in range(splice_point, second_splice):
+            if i in chromosome1.keys():
+                child[i] = chromosome2[i]  # replace #1 allels with #2 allels
+
+        return child
 
     def mutate(self, chromosome):
         '''random SNP mutation on chromosome, with proper rate'''
         mutate = random()
         if mutate < self.mutation_rate:
+            if isinstance(chromosome, dict):   # specimen as dictionary
+                snp = choice(list(chromosome.keys()))
+                new_val = randint(0, self.max_colors)
+                chromosome[snp] = new_val
+                return chromosome
+            # and for encoded specimen
             snp = randint(0, len(chromosome) - 1)
             if chromosome[snp] == '0':
                 chromosome = chromosome[:snp] + '1' + chromosome[(snp + 1):]
@@ -87,12 +117,13 @@ class GeneticColoring:
             coloring = self.decode(coloring)
         if is_coloring_good(self, coloring):
             return nr_of_colors(coloring), True
-        else:  # silly large int for sorting to work, coloring is invalid
+        else:  # silly large int for sorting to work, as coloring is invalid
             return self.vertex_nr**2, False
 
-    def breed_generations(self, generations_nr=None):
+    def breed_generations_of_encoded(self, generations_nr=None):
         '''Select best specimens from population,
-        use them to breed next generation'''
+        use them to breed next generation.
+        Working on specimens as (bite) string'''
         if not generations_nr:
             generations_nr = self.generations_nr
         # initiate population if none is present
@@ -102,9 +133,9 @@ class GeneticColoring:
             # cheat a little
             self.population[0] = color_greedy(self)
 
-        for i in range(generations_nr):
+        for i in range(generations_nr):  # breed number of generations
+            # choose the size of selected best fitted subpopulation
             bps = randint(self.population_size/5, self.population_size/3)
-            # size of breeding subpopulation of best fitted
             best_ones = sorted(self.population, key=eval_fitness(x)[0])[:bps]
             # create next generation replacing old population
             self.population = []
