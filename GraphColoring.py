@@ -164,6 +164,7 @@ if __name__ == "__main__":
         meh = GeneticColoring(graph)
         code = meh.encode(meh.naive_coloring)
         specimen = meh.decode(code)
+        random_code = meh.encode(None)
 
 specs = '''\n\nKolorowanie grafów. Możliwe algorytmy:
     -genetyczny
