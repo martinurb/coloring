@@ -136,15 +136,15 @@ class GeneticColoring:
         for i in range(generations_nr):  # breed number of generations
             # choose the size of selected best fitted subpopulation
             bps = randint(self.population_size/5, self.population_size/3)
-            best_ones = sorted(self.population, key=eval_fitness(x)[0])[:bps]
+            parents = sorted(self.population, key=eval_fitness(x)[0])[:bps]
             # create next generation replacing old population
             self.population = []
             # let in a few best fitted from previous
-            self.population = [one for one in best_ones[:5] if one[1]]
+            self.population = [one for one in parents[:5] if one[1]]
             # and fill with children of random specimens
             while len(population) < self.population_size:
-                mother = best_ones[randint(0, bps-1)]
-                father = best_ones[randint(0, bps-1)]
+                mother = parents[randint(0, bps-1)]
+                father = parents[randint(0, bps-1)]
                 child = self.crossover(mother, father)
                 population.append(child)
         # select the best specimen

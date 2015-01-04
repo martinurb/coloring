@@ -58,7 +58,6 @@ class RandomGraph:
             neigh_colors = [coloring[v] for v in self.adjlist[vtx]]
             while coloring[vtx] in neigh_colors:
                 coloring[vtx] += 1
-                neigh_colors = [coloring[v] for v in self.adjlist[vtx]]
         return coloring
 
     def max_nr_of_colors(self):
@@ -70,7 +69,6 @@ class RandomGraph:
         more efficient for sparse graphs'''
         best_coloring = color_greedy(self)       # for good start
         max_colors = nr_of_colors(best_coloring)  # ceilling for nr of colors
-        cur_colors = max_colors
 
         nodes = sorted(list(self.adjlist.keys()))
         n = len(nodes)
@@ -85,29 +83,12 @@ class RandomGraph:
         counter = 0  # more readable than catching IndexError
         while counter < max_colors ** n:  # now iterate over k**n possibilities
             if is_coloring_good(self, coloring):
-                if nr_of_colors(coloring) < cur_colors:
+                if nr_of_colors(coloring) < max_colors:
                     best_coloring = {k: v for k, v in coloring.items()}
-                    cur_colors = nr_of_colors(coloring)
+                    max_colors = nr_of_colors(coloring)
             counter += 1
             inc_w_carryout(coloring, 0, max_colors, nodes)
         return best_coloring
-
-    def old_color_bf(self):
-        """bruteforce alghoritm for graph coloring
-        time of execution noticeable for > 6 nodes on core i5"""
-        coloring = {v: 0 for v in self.adjlist}
-        minnr_of_colors = self.vertex_nr
-        mincoloring = {k: v for k, v in coloring.items()}
-        try:
-            for x in range(minnr_of_colors ** minnr_of_colors):
-                if nr_of_colors(coloring) < minnr_of_colors:
-                    if is_coloring_good(self, coloring):
-                        minnr_of_colors = nr_of_colors(coloring)
-                        mincoloring = {k: v for k, v in coloring.items()}
-                coloring = next_coloring(coloring, self.vertex_nr)
-            return mincoloring
-        except OverflowError:
-            print("minnr_of_colors", minnr_of_colors)
 
     def color_lf(self):
         """Largest First algorithm for graph coloring"""

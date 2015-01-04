@@ -7,6 +7,8 @@ def nr_of_colors(coloring):
 
 
 def is_coloring_good(graph, coloring):
+    if graph.adjlist and not coloring:
+        return False
     for node in graph.adjlist:
         neigh_colors = [coloring[v] for v in graph.adjlist[node]]
         if coloring[node] in neigh_colors:
@@ -34,54 +36,6 @@ def neighbors(node, adjmatrix):
     return list
 
 
-def q_good_coloring(adjmatrix, coloring):
-    for node in range(len(adjmatrix)):
-        neigh = neighbors(node, adjmatrix)
-        for v in neigh:
-            if coloring[v] == coloring[node]:
-                return False
-        return True
-
-
-def col_bf_k(adjmatrix, k):
-    """Attempts to find k-coloring of given adjmatrix"""
-    vertex_nr = len(adjmatrix)
-    qgood = False
-    coloring = [0 for x in range(vertex_nr)]
-    for x in range(vertex_nr ** k):
-        if q_good_coloring(adjmatrix, coloring):
-            qgood = True
-            break
-        coloring = next_coloring(coloring, k)
-    return [qgood, coloring]
-
-
-def col_bf_k_all(adjmatrix):
-    """Return min coloring"""
-    vertex_nr = len(adjmatrix)
-    for k in range(1, vertex_nr + 1):
-        coloring = col_bf_k(adjmatrix, k)
-        if coloring[0]:
-            return coloring
-
-
-def col_bf(adjmatrix):
-    vertex_nr = len(adjmatrix)
-    coloring = [0 for x in range(vertex_nr)]
-    minnr_of_colors = vertex_nr
-    mincoloring = list(range(minnr_of_colors))
-    try:
-        for x in range(minnr_of_colors ** minnr_of_colors):
-            if nr_of_colors(coloring) < minnr_of_colors:
-                if q_good_coloring(adjmatrix, coloring):
-                    minnr_of_colors = nr_of_colors(coloring)
-                    mincoloring = coloring[:]
-            coloring = next_coloring(coloring, vertex_nr)
-        return mincoloring
-    except OverflowError:
-        print("minnr_of_colors", minnr_of_colors)
-
-
 def color_greedy(graph):
     "greedy alghoritm for graph coloring"
     coloring = {vertex: 0 for vertex in graph.adjlist}
@@ -91,31 +45,6 @@ def color_greedy(graph):
             coloring[vtx] += 1
             neigh_colors = [coloring[v] for v in graph.adjlist[vtx]]
     return coloring
-
-
-def bruteforce(graph):
-    "another attempt to bruteforce coloring"
-    best_coloring = color_greedy(graph)       # for good start
-    max_colors = nr_of_colors(best_coloring)  # ceilling for nr of colors
-    cur_colors = max_colors
-
-    nodes = sorted(list(graph.adjlist.keys()))
-    n = len(nodes)
-    coloring = {vertex: 0 for vertex in nodes}
-    if n > 8:
-        decision = input('Attepting to color large graph, it can take few\
-            hundred years. Continue? (y/n)').lower()
-        if 'n' in decision:
-            return None  # not having free few hundred years apparently
-    counter = 0
-    while counter < max_colors ** n:  # now iterate over k**n possibilities
-        if is_coloring_good(graph, coloring):
-            if nr_of_colors(coloring) < cur_colors:
-                best_coloring = {k: v for k, v in coloring.items()}
-                cur_colors = nr_of_colors(coloring)
-        counter += 1
-        inc_w_carryout(coloring, 0, max_colors, nodes)
-    return best_coloring
 
 
 def inc_w_carryout(coloring, i, max_colors, nodes=None):
