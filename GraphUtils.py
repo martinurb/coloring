@@ -91,3 +91,43 @@ def color_greedy(graph):
             coloring[vtx] += 1
             neigh_colors = [coloring[v] for v in graph.adjlist[vtx]]
     return coloring
+
+
+def bruteforce(graph):
+    "another attempt to bruteforce coloring"
+    best_coloring = color_greedy(graph)       # for good start
+    max_colors = nr_of_colors(best_coloring)  # ceilling for nr of colors
+    cur_colors = max_colors
+
+    nodes = sorted(list(graph.adjlist.keys()))
+    n = len(nodes)
+    coloring = {vertex: 0 for vertex in nodes}
+    if n > 8:
+        decision = input('Attepting to color large graph, it can take few\
+            hundred years. Continue? (y/n)').lower()
+        if 'n' in decision:
+            return None  # not having free few hundred years apparently
+    counter = 0
+    while counter < max_colors ** n:  # now iterate over k**n possibilities
+        if is_coloring_good(graph, coloring):
+            if nr_of_colors(coloring) < cur_colors:
+                best_coloring = {k: v for k, v in coloring.items()}
+                cur_colors = nr_of_colors(coloring)
+        counter += 1
+        inc_w_carryout(coloring, 0, max_colors, nodes)
+    return best_coloring
+
+
+def inc_w_carryout(coloring, i, max_colors, nodes=None):
+    '''Increment i-th element of coloring, checking if values
+    is not larger than max possible # of color.
+    Pre-calculated nodes can be passed for performance.
+    'Overflows' with IndexError after k**n iterations,
+    can be catched or prevented by loop while counter < k**n '''
+    if not nodes:
+        nodes = sorted(list(coloring.keys()))
+    coloring[nodes[i]] += 1
+    if coloring[nodes[i]] > max_colors:  # 'carry out'
+        coloring[nodes[i]] = 0
+        i = inc_w_carryout(coloring, i+1, max_colors, nodes)
+    return i

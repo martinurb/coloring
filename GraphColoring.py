@@ -66,6 +66,33 @@ class RandomGraph:
         return nr_of_colors(naive_coloring)
 
     def color_bf(self):
+        '''another attempt to bruteforce coloring,
+        more efficient for sparse graphs'''
+        best_coloring = color_greedy(self)       # for good start
+        max_colors = nr_of_colors(best_coloring)  # ceilling for nr of colors
+        cur_colors = max_colors
+
+        nodes = sorted(list(self.adjlist.keys()))
+        n = len(nodes)
+        coloring = {vertex: 0 for vertex in nodes}  # empty
+
+        if n > 8:
+            decision = input('Attepting to color large self, it can take few\
+                hundred years. Continue? (y/n)').lower()
+            if 'n' in decision:
+                return None  # not having free few hundred years apparently
+
+        counter = 0  # more readable than catching IndexError
+        while counter < max_colors ** n:  # now iterate over k**n possibilities
+            if is_coloring_good(self, coloring):
+                if nr_of_colors(coloring) < cur_colors:
+                    best_coloring = {k: v for k, v in coloring.items()}
+                    cur_colors = nr_of_colors(coloring)
+            counter += 1
+            inc_w_carryout(coloring, 0, max_colors, nodes)
+        return best_coloring
+
+    def old_color_bf(self):
         """bruteforce alghoritm for graph coloring
         time of execution noticeable for nodes > 6 on core i5"""
         coloring = {v: 0 for v in self.adjlist}
@@ -160,11 +187,11 @@ if __name__ == "__main__":
 
         print("LF:", nr_of_colors(coloring), 'colors')
         graph.print_coloring(coloring, timer_stop)
-
-        meh = GeneticColoring(graph)
-        code = meh.encode(meh.naive_coloring)
-        specimen = meh.decode(code)
-        random_code = meh.encode(None)
+# yada yada from now on
+        # meh = GeneticColoring(graph)
+        # code = meh.encode(meh.naive_coloring)
+        # specimen = meh.decode(code)
+        # random_code = meh.encode(None)
 
 specs = '''\n\nKolorowanie grafów. Możliwe algorytmy:
     -genetyczny
