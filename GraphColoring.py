@@ -44,12 +44,16 @@ class RandomGraph:
     def is_coloring_good(self, coloring):
         return is_coloring_good(self, coloring)
 
-    def print_coloring(self, coloring, time=None):
-        if time:
-            print('Properly:', self.is_coloring_good(coloring), coloring,
-                  time, '[s]')
+    def print_coloring(self, coloring, time, algorithm=None):
+        if algorithm:
+            print(algorithm)
+        if self.is_coloring_good(coloring):
+            print(nr_of_colors(coloring), 'colors, properly.', time, '[s]')
         else:
-            print('Properly:', self.is_coloring_good(coloring), coloring)
+            print(nr_of_colors(coloring), 'colors', time, '[s],\
+                but something went wrong')
+            import pdb
+            pdb.set_trace()
 
     def color_greedy(self):
         "greedy alghoritm for graph coloring"
@@ -64,8 +68,30 @@ class RandomGraph:
         naive_coloring = self.color_greedy()
         return nr_of_colors(naive_coloring)
 
-    def color_bf(self):
-        '''another attempt to bruteforce coloring,
+    def color_bruteforce(self):
+        '''Bruteforce graph coloring'''
+        nodes = sorted(list(self.adjlist.keys()))
+        n = len(nodes)
+        coloring = {vertex: 0 for vertex in nodes}  # empty
+
+        if n >= 8:
+            decision = input('Attepting to color large self, it can take few\
+                hundred years. Continue? (y/n)').lower()
+            if 'n' in decision:
+                return None  # not having free few hundred years apparently
+        k_min = n
+        counter = 0  # more readable than catching IndexError
+        while counter < n ** n:  # now iterate over k**n possibilities
+            if is_coloring_good(self, coloring):
+                if nr_of_colors(coloring) < k_min:
+                    best_coloring = {k: v for k, v in coloring.items()}
+                    k_min = nr_of_colors(best_coloring)
+            counter += 1
+            inc_w_carryout(coloring, 0, n, nodes)
+        return best_coloring
+
+    def color_branch_bound(self):
+        '''Another attempt to bruteforce coloring,
         more efficient for sparse graphs'''
         best_coloring = color_greedy(self)       # for good start
         max_colors = nr_of_colors(best_coloring)  # ceilling for nr of colors
@@ -100,7 +126,6 @@ class RandomGraph:
             while coloring[vtx] in neigh_colors:
                 coloring[vtx] += 1
                 neigh_colors = [coloring[v] for v in self.adjlist[vtx]]
-#        import pdb; pdb.set_trace()
         return coloring
 
 
@@ -136,7 +161,7 @@ class TestInstance(RandomGraph):
 
 
 if __name__ == "__main__":
-    argvparser = argparse.ArgumentParser(description="Testing alghoritms for\
+    argvparser = argparse.ArgumentParser(description="Testing algorithms for\
                                          graph coloring problem"
                                          )
     argvparser.add_argument("filename", metavar="filename", type=str,
@@ -152,22 +177,25 @@ if __name__ == "__main__":
         coloring = graph.color_greedy()
         timer_stop = time.clock() - timer_start
 
-        print("greedy:", nr_of_colors(coloring), 'colors')
-        graph.print_coloring(coloring, timer_stop)
+        graph.print_coloring(coloring, timer_stop, "Greedy algorithm")
 
         timer_start = time.clock()
-        coloring = graph.color_bf()
+        coloring = graph.color_branch_bound()
         timer_stop = time.clock() - timer_start
 
-        print("bruteforce:", nr_of_colors(coloring), 'colors')
-        graph.print_coloring(coloring, timer_stop)
+        graph.print_coloring(coloring, timer_stop, "Branch and bound")
+
+        timer_start = time.clock()
+        coloring = graph.color_bruteforce()
+        timer_stop = time.clock() - timer_start
+
+        graph.print_coloring(coloring, timer_stop, "Simple bruteforce")
 
         timer_start = time.clock()
         coloring = graph.color_lf()
         timer_stop = time.clock() - timer_start
 
-        print("LF:", nr_of_colors(coloring), 'colors')
-        graph.print_coloring(coloring, timer_stop)
+        graph.print_coloring(coloring, timer_stop, "LF algorithm")
 # yada yada from now on
         meh = GeneticColoring(graph)
         code = meh.encode(meh.naive_coloring)
