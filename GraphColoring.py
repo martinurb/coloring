@@ -94,7 +94,7 @@ class RandomGraph:
 
     def old_color_bf(self):
         """bruteforce alghoritm for graph coloring
-        time of execution noticeable for nodes > 6 on core i5"""
+        time of execution noticeable for > 6 nodes on core i5"""
         coloring = {v: 0 for v in self.adjlist}
         minnr_of_colors = self.vertex_nr
         mincoloring = {k: v for k, v in coloring.items()}
@@ -188,10 +188,10 @@ if __name__ == "__main__":
         print("LF:", nr_of_colors(coloring), 'colors')
         graph.print_coloring(coloring, timer_stop)
 # yada yada from now on
-        # meh = GeneticColoring(graph)
-        # code = meh.encode(meh.naive_coloring)
-        # specimen = meh.decode(code)
-        # random_code = meh.encode(None)
+        meh = GeneticColoring(graph)
+        code = meh.encode(meh.naive_coloring)
+        specimen = meh.decode(code)
+        random_code = meh.encode(None)
 
 specs = '''\n\nKolorowanie grafów. Możliwe algorytmy:
     -genetyczny
