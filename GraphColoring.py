@@ -34,7 +34,7 @@ class RandomGraph:
                              (len(self.adjlist), self.vertex_nr)
                              )
 
-    def printm(self):
+    def print_graph(self):
         for vertex in self.adjlist:
             print(vertex, self.adjlist[vertex])
 
@@ -62,12 +62,7 @@ class RandomGraph:
             neigh_colors = [coloring[v] for v in self.adjlist[vtx]]
             while coloring[vtx] in neigh_colors:
                 coloring[vtx] += 1
-            print(vtx, ':', coloring[vtx], '-', neigh_colors)
         return coloring
-
-    def max_nr_of_colors(self):
-        naive_coloring = self.color_greedy()
-        return nr_of_colors(naive_coloring)
 
     def color_bruteforce(self):
         '''Bruteforce graph coloring'''
@@ -122,11 +117,12 @@ class RandomGraph:
         coloring = {v: 0 for v in self.adjlist}
         nodes_by_deg = sorted(self.adjlist.items(), key=lambda x: len(x[1]))
         largest_first = [vtx[0] for vtx in nodes_by_deg[::-1]]
+        print(largest_first)
         for vtx in largest_first:
             neigh_colors = [coloring[v] for v in self.adjlist[vtx]]
             while coloring[vtx] in neigh_colors:
                 coloring[vtx] += 1
-                neigh_colors = [coloring[v] for v in self.adjlist[vtx]]
+            print(vtx, coloring[vtx], neigh_colors)
         return coloring
 
 
@@ -171,7 +167,7 @@ if __name__ == "__main__":
 
     for filename in argvparser.parse_args().filename:
         graph = TestInstance(filename)
-        graph.printm()
+        graph.print_graph()
         print('')
 
         timer_start = time.clock()
