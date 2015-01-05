@@ -196,7 +196,7 @@ if __name__ == "__main__":
         graph.print_coloring(coloring_lf, timer_stop, "LF algorithm")
 
         timer_start = time.clock()
-        coloring_gen = graph_gen.breed_generations_of_encoded()
+        coloring_gen = graph_gen.breed_generations()
         timer_stop = time.clock() - timer_start
 
         graph.print_coloring(coloring_gen, timer_stop, "Genetic algorithm")
