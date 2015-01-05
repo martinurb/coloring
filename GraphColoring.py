@@ -50,8 +50,8 @@ class RandomGraph:
         if self.is_coloring_good(coloring):
             print(nr_of_colors(coloring), 'colors, properly.', time, '[s]')
         else:
-            print(nr_of_colors(coloring), 'colors', time, '[s],\
-                but something went wrong')
+            print(nr_of_colors(coloring), 'colors', time, '[s], but \
+something went wrong')
             # import pdb; pdb.set_trace()
 
     def color_greedy(self):
@@ -63,13 +63,13 @@ class RandomGraph:
                 coloring[vtx] += 1
         return coloring
 
-    def color_bruteforce(self):
+    def color_bruteforce(self, aware=False):
         '''Bruteforce graph coloring'''
         nodes = sorted(list(self.adjlist.keys()))
         n = len(nodes)
         coloring = {vertex: 0 for vertex in nodes}  # empty
 
-        if n >= 8:
+        if n >= 8 and aware:
             decision = input('Attepting to color large graph, it can take few\
 hundred years. Continue? (y/n)').lower()
             if 'n' in decision:
@@ -85,7 +85,7 @@ hundred years. Continue? (y/n)').lower()
             inc_w_carryout(coloring, 0, n, nodes)
         return best_coloring
 
-    def color_branch_bound(self):
+    def color_branch_bound(self, aware=False):
         '''Another attempt to bruteforce coloring,
         more efficient for sparse graphs'''
         best_coloring = color_greedy(self)       # for good start
@@ -95,7 +95,7 @@ hundred years. Continue? (y/n)').lower()
         n = len(nodes)
         coloring = {vertex: 0 for vertex in nodes}  # empty
 
-        if n > 8:
+        if n > 8 and aware:
             decision = input('Attepting to color large graph, it can take few\
 hundred years. Continue? (y/n)').lower()
             if 'n' in decision:
@@ -155,14 +155,19 @@ class TestInstance(RandomGraph):
 
 
 if __name__ == "__main__":
+
     argvparser = argparse.ArgumentParser(description="Testing algorithms for\
                                          graph coloring problem"
                                          )
     argvparser.add_argument("filename", metavar="filename", type=str,
                             nargs="+", help="test instance file name",
                             default=None)
+    argvparser.add_argument('-a', action='store_true',
+                            help='be aware of exact algorithms complexity')
+    parsed_args = argvparser.parse_args()
 
     for filename in argvparser.parse_args().filename:
+        aware = parsed_args.a
         graph = TestInstance(filename)
         graph_gen = GeneticColoring(graph,
                                     graph.vertex_nr*20,   # change to adjust
@@ -178,13 +183,13 @@ if __name__ == "__main__":
         graph.print_coloring(coloring_gr, timer_stop, "Greedy algorithm")
 
         timer_start = time.clock()
-        coloring_bb = graph.color_branch_bound()
+        coloring_bb = graph.color_branch_bound(aware)
         timer_stop = time.clock() - timer_start
 
         graph.print_coloring(coloring_bb, timer_stop, "Branch and bound")
 
         timer_start = time.clock()
-        coloring_bf = graph.color_bruteforce()
+        coloring_bf = graph.color_bruteforce(aware)
         timer_stop = time.clock() - timer_start
 
         graph.print_coloring(coloring_bf, timer_stop, "Simple bruteforce")

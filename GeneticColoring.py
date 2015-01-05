@@ -113,7 +113,7 @@ class GeneticColoring:
             # select parents for next generation
             parents, bps = self.select_parents()
             self.breed_next_generation(parents, bps)
-        # select the best specimen
+        # finally select the best specimen
         best_in_final_gen = sorted(self.population,
                                    key=lambda x: self.eval_fitness(x)[0]
                                    )
