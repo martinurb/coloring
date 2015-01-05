@@ -8,69 +8,27 @@ class GeneticColoring:
     """Given graph as dictionary of adjacencies, returns coloring
     recieved by genetic algorithm"""
 
-    def __init__(self, graph, population_size=10, generations_nr=10):
+    def __init__(self, graph, population_size=10, generations_nr=10,
+                 mutation_rate=1
+                 ):
         self.naive_coloring = color_greedy(graph)
         self.max_colors = nr_of_colors(self.naive_coloring)
 
         self.adjlist = graph.adjlist
         self.vertex_nr = len(self.adjlist)
 
-        self.allel_size = int(math.ceil(math.log(self.max_colors, 2)))
+        self.allel_size = math.ceil(math.log(self.max_colors, 2))
         self.allels_nr = max(self.adjlist.keys())
         self.chromosome_size = (self.allels_nr + 1) * self.allel_size
 
         self.population_size = population_size
         self.generations_nr = generations_nr
-        self.mutation_rate = 1
-        self.population = []
-
-    def encode(self, coloring):
-        '''Return chromosome for given specimen-graph coloring
-        if none given return randomly initiated coloring'''
-        graph_nodes = self.adjlist.keys()
-        chromosome = ''
-        for i in range(self.allels_nr + 1):
-            if i in graph_nodes:
-                if coloring:
-                    allel = bin(coloring[i])
-                else:
-                    allel = bin(randint(0, self.max_colors))
-                chromosome += allel[2:].rjust(self.allel_size, '0')
-            else:
-                chromosome += '-' * self.allel_size
-        return chromosome
-
-    def decode(self, chromosome):
-        'Return coloring encoded by recieved chromosome'
-        specimen = {}
-        pos = 0
-        while pos < len(chromosome):
-            try:
-                allel = int(chromosome[pos: pos + self.allel_size], 2)
-                specimen[int(pos/self.allel_size)] = allel
-            except ValueError:   # empty '---' allel encountered
-                pass             # 'trash DNA'
-            finally:
-                pos += self.allel_size
-        return specimen
-
-    def str_crossover(self, chromosome1, chromosome2):
-        '''Return child - crossover of two specimens'''
-        if not len(chromosome1) == len(chromosome2) == self.chromosome_size:
-            raise ValueError('chromosomes of length %d, %d instead of %d' %
-                             (len(chromosome1),
-                              len(chromosome2),
-                              self.allels_nr)
-                             )
-        if not (isinstance(chromosome1, str) and isinstance(chromosome2, str)):
-            raise KeyError("chromosomes should be passed encoded as strings")
-        splicing_point = randint(0, self.chromosome_size)
-        child = chromosome1[:splicing_point] + chromosome2[splicing_point:]
-
-        if splicing_point < self.chromosome_size / 2:  # add 2nd splicing point
-            second_splice = randint(splicing_point, self.chromosome_size)
-            child = child[:second_splice] + chromosome1[second_splice:]
-        return child
+        self.mutation_rate = mutation_rate
+        self.population = [{v: randint(0, self.max_colors)
+                            for v in self.adjlist}
+                           for i in range(self.population_size)
+                           ]
+        self.population[0] = self.naive_coloring  # cheat a little
 
     def crossover(self, chromosome1, chromosome2):
         '''Return child - crossover of two specimens, provided as dicts'''
@@ -120,6 +78,66 @@ class GeneticColoring:
         else:  # silly large int for sorting to work, as coloring is invalid
             return self.vertex_nr**2, False
 
+    def select_parents(self):
+        pass
+
+    def breed_next_generation(self):
+        pass
+
+#==============================================================================
+# for specimens encoded as strings
+    def encode(self, coloring):
+        '''Return chromosome for given specimen-graph coloring,
+        if none given - return randomly initiated coloring'''
+        graph_nodes = self.adjlist.keys()
+        chromosome = ''
+        for i in range(self.allels_nr + 1):
+            if i in graph_nodes:
+                if coloring:
+                    allel = bin(coloring[i])[2:]
+                else:
+                    allel = bin(randint(0, self.max_colors-1))[2:]
+                while len(allel) < self.allel_size:
+                    allel = '0' + allel
+                chromosome += allel
+            else:
+                chromosome += '-' * self.allel_size
+        return chromosome
+
+    def decode(self, chromosome):
+        'Return coloring encoded by recieved chromosome'
+        specimen = {}
+        pos = 0
+        while pos < len(chromosome):
+            try:
+                allel = int(chromosome[pos: pos + self.allel_size], 2)
+                specimen[int(pos/self.allel_size)] = allel
+            except ValueError:   # empty '---' allel encountered
+                pass             # 'trash DNA'
+            finally:
+                pos += self.allel_size
+        return specimen
+
+    def str_crossover(self, chromosome1, chromosome2):
+        '''Return child - crossover of two specimens'''
+        if not len(chromosome1) == len(chromosome2) == self.chromosome_size:
+            import pdb
+            pdb.set_trace()
+            raise ValueError('chromosomes of length %d, %d instead of %d' %
+                             (len(chromosome1),
+                              len(chromosome2),
+                              self.chromosome_size)
+                             )
+        if not (isinstance(chromosome1, str) and isinstance(chromosome2, str)):
+            raise KeyError("chromosomes should be passed encoded as strings")
+        splicing_point = randint(0, self.chromosome_size)
+        child = chromosome1[:splicing_point] + chromosome2[splicing_point:]
+
+        if splicing_point < self.chromosome_size / 2:  # add 2nd splicing point
+            second_splice = randint(splicing_point, self.chromosome_size)
+            child = child[:second_splice] + chromosome1[second_splice:]
+        return child
+
     def breed_generations_of_encoded(self, generations_nr=None):
         '''Select best specimens from population,
         use them to breed next generation.
@@ -127,28 +145,33 @@ class GeneticColoring:
         if not generations_nr:
             generations_nr = self.generations_nr
         # initiate population if none is present
-        if not self.population:
-            self.population = [self.encode(False)
-                               for i in range(self.population_size)]
+        self.population = [self.encode(False)
+                           for i in range(self.population_size)]
             # cheat a little
-            self.population[0] = color_greedy(self)
+        self.population[0] = self.encode(self.naive_coloring)
 
         for i in range(generations_nr):  # breed number of generations
             # choose the size of selected best fitted subpopulation
-            bps = randint(self.population_size/5, self.population_size/3)
-            parents = sorted(self.population, key=eval_fitness(x)[0])[:bps]
+            bps = randint(int(self.population_size/5),
+                          int(self.population_size/3)
+                          )
+            parents = sorted(self.population,
+                             key=lambda x: self.eval_fitness(x)[0]
+                             )[:bps]
             # create next generation replacing old population
             self.population = []
             # let in a few best fitted from previous
             self.population = [one for one in parents[:5] if one[1]]
             # and fill with children of random specimens
-            while len(population) < self.population_size:
+            while len(self.population) < self.population_size:
                 mother = parents[randint(0, bps-1)]
                 father = parents[randint(0, bps-1)]
-                child = self.crossover(mother, father)
-                population.append(child)
+                child = self.mutate(self.str_crossover(mother, father))
+                self.population.append(child)
         # select the best specimen
-        best_gene = sorted(self.population, key=eval_fitness(x)[0])[0]
+        best_gene = sorted(self.population,
+                           key=lambda x: self.eval_fitness(x)[0]
+                           )[0]
         best_specimen = self.decode(best_gene)
         # return the best one if it works
         if self.eval_fitness(best_specimen)[1]:

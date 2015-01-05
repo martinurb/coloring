@@ -117,12 +117,10 @@ class RandomGraph:
         coloring = {v: 0 for v in self.adjlist}
         nodes_by_deg = sorted(self.adjlist.items(), key=lambda x: len(x[1]))
         largest_first = [vtx[0] for vtx in nodes_by_deg[::-1]]
-        print(largest_first)
         for vtx in largest_first:
             neigh_colors = [coloring[v] for v in self.adjlist[vtx]]
             while coloring[vtx] in neigh_colors:
                 coloring[vtx] += 1
-            print(vtx, coloring[vtx], neigh_colors)
         return coloring
 
 
@@ -167,6 +165,7 @@ if __name__ == "__main__":
 
     for filename in argvparser.parse_args().filename:
         graph = TestInstance(filename)
+        graph_gen = GeneticColoring(graph)
         graph.print_graph()
         print('')
 
@@ -193,11 +192,12 @@ if __name__ == "__main__":
         timer_stop = time.clock() - timer_start
 
         graph.print_coloring(coloring_lf, timer_stop, "LF algorithm")
-# yada yada from now on
-        meh = GeneticColoring(graph)
-        code = meh.encode(meh.naive_coloring)
-        specimen = meh.decode(code)
-        random_code = meh.encode(None)
+
+        timer_start = time.clock()
+        coloring_gen = graph_gen.breed_generations_of_encoded()
+        timer_stop = time.clock() - timer_start
+
+        graph.print_coloring(coloring_gen, timer_stop, "Genetic algorithm")
 
 specs = '''\n\nKolorowanie grafów. Możliwe algorytmy:
     -genetyczny
