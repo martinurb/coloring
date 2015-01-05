@@ -52,8 +52,7 @@ class RandomGraph:
         else:
             print(nr_of_colors(coloring), 'colors', time, '[s],\
                 but something went wrong')
-            import pdb
-            pdb.set_trace()
+            # import pdb; pdb.set_trace()
 
     def color_greedy(self):
         "greedy alghoritm for graph coloring"
@@ -72,12 +71,12 @@ class RandomGraph:
 
         if n >= 8:
             decision = input('Attepting to color large graph, it can take few\
-                hundred years. Continue? (y/n)').lower()
+hundred years. Continue? (y/n)').lower()
             if 'n' in decision:
-                return None  # not having free few hundred years apparently
+                return {}  # not having free few hundred years apparently
         k_min = n
         counter = 0  # more readable than catching IndexError
-        while counter < n ** n:  # now iterate over k**n possibilities
+        while counter < n ** n:  # now iterate over n**n possibilities
             if is_coloring_good(self, coloring):
                 if nr_of_colors(coloring) < k_min:
                     best_coloring = {k: v for k, v in coloring.items()}
@@ -98,9 +97,9 @@ class RandomGraph:
 
         if n > 8:
             decision = input('Attepting to color large graph, it can take few\
-                hundred years. Continue? (y/n)').lower()
+hundred years. Continue? (y/n)').lower()
             if 'n' in decision:
-                return None  # what a pity
+                return {}  # what a pity
 
         counter = 0  # more readable than catching IndexError
         while counter < max_colors ** n:  # now iterate over k**n possibilities
@@ -165,7 +164,10 @@ if __name__ == "__main__":
 
     for filename in argvparser.parse_args().filename:
         graph = TestInstance(filename)
-        graph_gen = GeneticColoring(graph)
+        graph_gen = GeneticColoring(graph,
+                                    graph.vertex_nr*20,   # change to adjust
+                                    graph.vertex_nr*20    # speed and precision
+                                    )
         graph.print_graph()
         print('')
 

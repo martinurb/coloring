@@ -9,7 +9,7 @@ class GeneticColoring:
     recieved by genetic algorithm"""
 
     def __init__(self, graph, population_size=10, generations_nr=10,
-                 mutation_rate=1
+                 mutation_rate=1.0
                  ):
         self.naive_coloring = color_greedy(graph)
         self.max_colors = nr_of_colors(self.naive_coloring)
