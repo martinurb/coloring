@@ -70,7 +70,7 @@ something went wrong')
         coloring = {vertex: 0 for vertex in nodes}  # empty
 
         if n >= 8 and aware:
-            decision = input('Attepting to color large graph, it can take few\
+            decision = input('Attepting to color large graph, it can take few \
 hundred years. Continue? (y/n)').lower()
             if 'n' in decision:
                 return {}  # not having free few hundred years apparently
@@ -96,7 +96,7 @@ hundred years. Continue? (y/n)').lower()
         coloring = {vertex: 0 for vertex in nodes}  # empty
 
         if n > 8 and aware:
-            decision = input('Attepting to color large graph, it can take few\
+            decision = input('Attepting to color large graph, it can take few \
 hundred years. Continue? (y/n)').lower()
             if 'n' in decision:
                 return {}  # what a pity
@@ -163,7 +163,8 @@ if __name__ == "__main__":
                             nargs="+", help="test instance file name",
                             default=None)
     argvparser.add_argument('-a', action='store_true',
-                            help='be aware of exact algorithms complexity')
+                            help='be aware of exact algorithms complexity. \
+ask for confirmation before processing large graphs.')
     parsed_args = argvparser.parse_args()
 
     for filename in argvparser.parse_args().filename:
