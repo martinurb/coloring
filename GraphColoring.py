@@ -114,15 +114,51 @@ def col_greedy(adjmatrix):
     
     return coloring
     
-graph = RandomGraph(5,.5,3)
+def q_safe(vertex, color,adjmatrix, coloring):
+    """Check if color may be assigned to vertex under given coloring"""
+    for n in neighbors(vertex,adjmatrix):
+        if color == coloring[n]:
+            return False
+    return True
+
+def q_col_util(adjmatrix,kmax,coloring,vertex):
+    vertex_nr = len(adjmatrix)
+    if vertex == vertex_nr:
+        return True
+    for color in range(kmax):
+        if q_safe(vertex,color,adjmatrix,coloring):
+            coloring[vertex] = color
+            if q_col_util(adjmatrix, kmax, coloring, vertex+1) == True:
+                return True
+            coloring[vertex] = -1
+    return False
+
+def col_backtracking(adjmatrix, kmax):
+    vertex_nr = len(adjmatrix)
+    coloring = [-1 for _ in range(vertex_nr)]
+    for k in range(kmax):
+        coloring = [-1 for _ in range(vertex_nr)]
+        if q_col_util(adjmatrix, k, coloring, 0) == True:
+            return coloring
+    return coloring
+
+
+
+
+#graph = RandomGraph(5,.5,3)
         
-printm(graph.adjmatrix)
-print('')
-timestart=time.clock()
-coloring = col_bf(graph.adjmatrix)
-print([q_good_coloring(graph.adjmatrix,coloring),coloring],time.clock()-timestart)
-timestart=time.clock()
-print(col_bf_k_all(graph.adjmatrix),time.clock()-timestart)
-timestart=time.clock()
-coloring = col_greedy(graph.adjmatrix)
-print([q_good_coloring(graph.adjmatrix,coloring),col_greedy(graph.adjmatrix)],time.clock()-timestart)
+#printm(graph.adjmatrix)
+#print('')
+#timestart=time.clock()
+#coloring = col_bf(graph.adjmatrix)
+#print([q_good_coloring(graph.adjmatrix,coloring),coloring],time.clock()-timestart)
+#timestart=time.clock()
+#print(col_bf_k_all(graph.adjmatrix),time.clock()-timestart)
+
+#timestart=time.clock()
+#coloring = col_backtracking(graph.adjmatrix,graph.vertex_nr)
+#print([q_good_coloring(graph.adjmatrix,coloring),coloring],time.clock()-timestart)
+
+#timestart=time.clock()
+#coloring = col_greedy(graph.adjmatrix)
+#print([q_good_coloring(graph.adjmatrix,coloring),coloring],time.clock()-timestart)
