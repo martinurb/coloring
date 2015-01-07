@@ -171,8 +171,9 @@ ask for confirmation before processing large graphs.')
         aware = parsed_args.a
         graph = TestInstance(filename)
         graph_gen = GeneticColoring(graph,
-                                    graph.vertex_nr*20,   # change to adjust
-                                    graph.vertex_nr*20    # speed and precision
+                                    graph.vertex_nr**3,   # size of population
+                                    graph.vertex_nr**3    # nr of generations
+                                    # change both to adjust speed and precision
                                     )
         graph.print_graph()
         print('')

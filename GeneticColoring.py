@@ -82,24 +82,26 @@ class GeneticColoring:
         self.population[0] = self.naive_coloring  # cheat a little
 
     def select_parents(self):
-        # choose the size of selected best fitted subpopulation
-        bps = randint(int(self.population_size/5),
-                      int(self.population_size/3)
-                      )
-        parents = sorted(self.population,
-                         key=lambda x: self.eval_fitness(x)[0]
-                         )[:bps]
-        return parents, bps
+        classification = sorted(self.population,
+                                key=lambda x: self.eval_fitness(x)[0]
+                                )
+        # top 25% can be parents
+        parents = classification[:int(self.population_size / 4)]
+        # the better one is, the higher chances of being parent
+        for i in range(5, 11):
+            parents.extend(classification[:int(self.population_size / 4)])
+        return parents
 
-    def breed_next_generation(self, parents, bps):
+    def breed_next_generation(self, parents):
         # purge population
         self.population = []
+        bps = len(parents) - 1  # breeding pool size
         # let in a few best fitted from previous
         self.population = [one for one in parents[:5] if one[1]]
         # and fill with children of random specimens; dumb but works
         while len(self.population) < self.population_size:
-            mother = parents[randint(0, bps-1)]
-            father = parents[randint(0, bps-1)]
+            mother = parents[randint(0, bps)]
+            father = parents[randint(0, bps)]
             child = self.mutate(self.crossover(mother, father))
             self.population.append(child)
 
@@ -111,8 +113,8 @@ class GeneticColoring:
             nr_of_generations = self.nr_of_generations
         for i in range(nr_of_generations):  # breed number of generations
             # select parents for next generation
-            parents, bps = self.select_parents()
-            self.breed_next_generation(parents, bps)
+            parents = self.select_parents()
+            self.breed_next_generation(parents)
         # finally select the best specimen
         best_in_final_gen = sorted(self.population,
                                    key=lambda x: self.eval_fitness(x)[0]
