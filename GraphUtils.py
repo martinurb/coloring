@@ -58,5 +58,8 @@ def inc_w_carryout(coloring, i, max_colors, nodes=None):
     coloring[nodes[i]] += 1
     if coloring[nodes[i]] > max_colors:  # 'carry out'
         coloring[nodes[i]] = 0
-        i = inc_w_carryout(coloring, i+1, max_colors, nodes)
+        try:
+            i = inc_w_carryout(coloring, i + 1, max_colors, nodes)
+        except IndexError:  # carry out tries to escape from solution
+            return False  # algorithm reached k^n iterations, end
     return i
