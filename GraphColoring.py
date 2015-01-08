@@ -1,164 +1,249 @@
+#! /usr/bin/python3
+# -*- coding=utf8 -*-
 import random
 import time
+import argparse
+from GraphUtils import *
+from GeneticColoring import GeneticColoring
+from NN import NetworkColoring
+import numpy as np
+
+
 
 class RandomGraph:
-    def __init__(self,vertex_nr,filling,seed):
+    """Generates random graph of specified vertex number and filling
+    represented as adjacency list"""
+    def __init__(self, vertex_nr, filling, seed):
         random.seed(seed)
         self.vertex_nr = vertex_nr
-        self.adjmatrix = [[0 for x in xrange(vertex_nr)] for x in xrange(vertex_nr)] 
+        self.adjlist = {vertex: [] for vertex in range(1, vertex_nr + 1)}
+
+        self.adjmatrix = np.array([[0 for _ in range(self.vertex_nr)]\
+                                       for _ in range (self.vertex_nr)])
+            # vertex in test instances started from 1, so we too wont use 0
         for x in range(vertex_nr):
-            for y in range(x+1,vertex_nr):
-                if random.random() > filling:
-                    el = 0
-                else:
-                    el = 1
-                self.adjmatrix[x][y] = el
-                self.adjmatrix[y][x] = el
+            for y in range(int(vertex_nr / 2)):
+                if random.random() <= filling and x != y:
+                    if x in self.adjlist:
+                        if y not in self.adjlist[x]:
+                            self.adjlist[x].append(y)
+                    else:
+                        self.adjlist[x] = [y]
 
-def printm(matrix):
-    for r in range(len(matrix)):
-        print(matrix[r])
+                    if y in self.adjlist:
+                        if x not in self.adjlist[y]:
+                            self.adjlist[y].append(x)
+                    else:
+                        self.adjlist[y] = [x]
 
-def neighbors(node, adjmatrix):
-    row = adjmatrix[node]
-    list = []
-    for x in range(len(row)):
-        if row[x] == 1:
-            list.append(x)
-    return list
-    
-def q_good_coloring(adjmatrix, coloring):
-    for node in range(len(adjmatrix)):
-        neigh = neighbors(node,adjmatrix)
-        clist = []
-        for v in neigh:
-            if coloring[v] == coloring[node]:
-                return False
-    return True
-    
-def next_coloring(coloring):
-    max = len(coloring)-1
-    for x in range(len(coloring)):
-        if coloring[x] < len(coloring)-1:
-            coloring[x] = coloring[x]+1
-            break
+                    self.adjmatrix[x-1][y-1] = 1
+                    self.adjmatrix[y-1][x-1] = 1
+        if len(self.adjlist) != self.vertex_nr:
+            raise ValueError("Graph not loaded properly. %d nodes of %d" %
+                             (len(self.adjlist), self.vertex_nr)
+                             )
+
+    def print_graph(self):
+        for vertex in self.adjlist:
+            print(vertex, self.adjlist[vertex])
+
+    def neighbours(self, vertex):
+        return self.adjlist[vertex]
+
+    def is_coloring_good(self, coloring):
+        return is_coloring_good(self, coloring)
+
+    def print_coloring(self, coloring, time, algorithm=None):
+        if algorithm:
+            print(algorithm)
+        if self.is_coloring_good(coloring):
+            print(nr_of_colors(coloring), 'colors, properly.', time, '[s]')
         else:
-            coloring[x] = 0
-    return coloring
+            print(nr_of_colors(coloring), 'colors', time, '[s], but \
+something went wrong')
+            # import pdb; pdb.set_trace()
 
-def next_coloring(coloring,kmax):
-    """Return next, at most k-coloring"""
-    for x in range(len(coloring)):
-        if coloring[x] < kmax-1:
-            coloring[x] = coloring[x]+1
-            break
-        else:
-            coloring[x] = 0
-    return coloring
+    def color_greedy(self):
+        "greedy alghoritm for graph coloring"
+        coloring = {vertex: 0 for vertex in self.adjlist}
+        for vtx in coloring:
+            neigh_colors = [coloring[v] for v in self.adjlist[vtx]]
+            while coloring[vtx] in neigh_colors:
+                coloring[vtx] += 1
+        return coloring
 
-def nr_of_colors(coloring):
-    colorlist = []
-    for c in coloring:
-        if c in colorlist:
-            continue
-        else:
-            colorlist.append(c)
-    return len(colorlist)
+    def color_bruteforce(self, aware=False):
+        '''Bruteforce graph coloring'''
+        nodes = sorted(list(self.adjlist.keys()))
+        n = len(nodes)
+        coloring = {vertex: 0 for vertex in nodes}  # empty
 
-def col_bf_k(adjmatrix,k):
-    """Attempts to find k-coloring of given adjmatrix"""
-    vertex_nr = len(adjmatrix)
-    qgood = False
-    coloring = [0 for x in range(vertex_nr)]
-    for x in range(vertex_nr**k):
-        if q_good_coloring(adjmatrix,coloring):
-            qgood = True
-            break
-        coloring = next_coloring(coloring,k)
-    return [qgood,coloring]
+        if n >= 8 and aware:
+            decision = input('Attepting to color large graph, it can take few \
+hundred years. Continue? (y/n)').lower()
+            if 'n' in decision:
+                return {}  # not having free few hundred years apparently
+        k_min = n
+        counter = 0  # more readable than catching IndexError
+        while counter < n ** n:  # now iterate over n**n possibilities
+            if is_coloring_good(self, coloring):
+                if nr_of_colors(coloring) < k_min:
+                    best_coloring = {k: v for k, v in coloring.items()}
+                    k_min = nr_of_colors(best_coloring)
+            counter += 1
+            inc_w_carryout(coloring, 0, n, nodes)
+        return best_coloring
 
-def col_bf_k_all(adjmatrix):
-    """Return min coloring"""
-    vertex_nr = len(adjmatrix)
-    for k in range(1,vertex_nr+1):
-        coloring = col_bf_k(adjmatrix,k)
-        if coloring[0]:
-            return coloring
+    def color_branch_bound(self, aware=False):
+        '''Another attempt to bruteforce coloring,
+        more efficient for sparse graphs'''
+        best_coloring = color_greedy(self)       # for good start
+        max_colors = nr_of_colors(best_coloring)  # ceilling for nr of colors
 
-def col_bf(adjmatrix):
-    vertex_nr = len(adjmatrix)
-    coloring = [0 for x in range(vertex_nr)]
-    minnr_of_colors = vertex_nr
-    mincoloring = list(range(minnr_of_colors))
-    for x in range(minnr_of_colors**minnr_of_colors):
-        if nr_of_colors(coloring) < minnr_of_colors:
-            if q_good_coloring(adjmatrix,coloring):
-                minnr_of_colors = nr_of_colors(coloring)
-                mincoloring = coloring[:]
-        coloring = next_coloring(coloring,vertex_nr)
-    return mincoloring
+        nodes = sorted(list(self.adjlist.keys()))
+        n = len(nodes)
+        coloring = {vertex: 0 for vertex in nodes}  # empty
 
-def col_greedy(adjmatrix):
-    coloring = [-1 for x in range(len(adjmatrix))]
-    for node in range(len(adjmatrix)):
-        for c in range(len(adjmatrix)):
-            badcolor = False
-            for n in neighbors(node, adjmatrix):
-                if c == coloring[n]:
-                    badcolor = True
-            if badcolor:
-                continue
-            else:
-                coloring[node] = c
-                break
-    
-    return coloring
-    
-def q_safe(vertex, color,adjmatrix, coloring):
-    """Check if color may be assigned to vertex under given coloring"""
-    for n in neighbors(vertex,adjmatrix):
-        if color == coloring[n]:
-            return False
-    return True
+        if n > 8 and aware:
+            decision = input('Attepting to color large graph, it can take few \
+hundred years. Continue? (y/n)').lower()
+            if 'n' in decision:
+                return {}  # what a pity
 
-def q_col_util(adjmatrix,kmax,coloring,vertex):
-    vertex_nr = len(adjmatrix)
-    if vertex == vertex_nr:
-        return True
-    for color in range(kmax):
-        if q_safe(vertex,color,adjmatrix,coloring):
-            coloring[vertex] = color
-            if q_col_util(adjmatrix, kmax, coloring, vertex+1) == True:
-                return True
-            coloring[vertex] = -1
-    return False
+        counter = 0  # more readable than catching IndexError
+        while counter < max_colors ** n:  # now iterate over k**n possibilities
+            if is_coloring_good(self, coloring):
+                if nr_of_colors(coloring) < max_colors:
+                    best_coloring = {k: v for k, v in coloring.items()}
+                    max_colors = nr_of_colors(coloring)
+            counter += 1
+            inc_w_carryout(coloring, 0, max_colors, nodes)
+        return best_coloring
 
-def col_backtracking(adjmatrix, kmax):
-    vertex_nr = len(adjmatrix)
-    coloring = [-1 for _ in range(vertex_nr)]
-    for k in range(kmax):
-        coloring = [-1 for _ in range(vertex_nr)]
-        if q_col_util(adjmatrix, k, coloring, 0) == True:
-            return coloring
-    return coloring
+    def color_lf(self):
+        """Largest First algorithm for graph coloring"""
+        coloring = {v: 0 for v in self.adjlist}
+        nodes_by_deg = sorted(self.adjlist.items(), key=lambda x: len(x[1]))
+        largest_first = [vtx[0] for vtx in nodes_by_deg[::-1]]
+        for vtx in largest_first:
+            neigh_colors = [coloring[v] for v in self.adjlist[vtx]]
+            while coloring[vtx] in neigh_colors:
+                coloring[vtx] += 1
+        return coloring
 
 
+class TestInstance(RandomGraph):
+    """Loads graph from specified file to adjacency list"""
+    def __init__(self, filename):
+        with open(filename, "r") as instance_file:
+            instance_file = instance_file.readlines()
+
+            nr = int(instance_file[0])
+            super(TestInstance, self).__init__(nr, 0, 0)
+
+            self.adjmatrix = np.array([[0 for _ in range(nr)]\
+                                       for _ in range (nr)])
+
+            for line in instance_file[1:]:
+                try:
+                    x, y = (int(i) for i in line.split())
+
+                    if x in self.adjlist:
+                        self.adjlist[x].append(y)
+                    else:
+                        self.adjlist[x] = [y]
+
+                    if y in self.adjlist:
+                        self.adjlist[y].append(x)
+                    else:
+                        self.adjlist[y] = [x]
+
+                    self.adjmatrix[x-1][y-1] = 1
+                    self.adjmatrix[y-1][x-1] = 1
+                except ValueError:
+                    print("Invalid value in line %d : <%s>" %
+                          (instance_file.index(line), line)
+                          )
+                except IndexError:
+                    print("Invalid value [too large] on line %d : <%s>" %
+                          (instance_file.index(line), line)
+                          )
 
 
-#graph = RandomGraph(5,.5,3)
-        
-#printm(graph.adjmatrix)
-#print('')
-#timestart=time.clock()
-#coloring = col_bf(graph.adjmatrix)
-#print([q_good_coloring(graph.adjmatrix,coloring),coloring],time.clock()-timestart)
-#timestart=time.clock()
-#print(col_bf_k_all(graph.adjmatrix),time.clock()-timestart)
+if __name__ == "__main__":
 
-#timestart=time.clock()
-#coloring = col_backtracking(graph.adjmatrix,graph.vertex_nr)
-#print([q_good_coloring(graph.adjmatrix,coloring),coloring],time.clock()-timestart)
+    argvparser = argparse.ArgumentParser(description="Testing algorithms for\
+                                         graph coloring problem"
+                                         )
+    argvparser.add_argument("filename", metavar="filename", type=str,
+                            nargs="+", help="test instance file name",
+                            default=None)
+    argvparser.add_argument('-a', action='store_true',
+                            help='be aware of exact algorithms complexity. \
+ask for confirmation before processing large graphs.')
+    parsed_args = argvparser.parse_args()
 
-#timestart=time.clock()
-#coloring = col_greedy(graph.adjmatrix)
-#print([q_good_coloring(graph.adjmatrix,coloring),coloring],time.clock()-timestart)
+    for filename in argvparser.parse_args().filename:
+        aware = parsed_args.a
+        graph = TestInstance(filename)
+        graph_gen = GeneticColoring(graph,
+                                    graph.vertex_nr*20,   # change to adjust
+                                    graph.vertex_nr*20    # speed and precision
+                                    )
+        graph_nn = NetworkColoring(graph)
+        graph.print_graph()
+        print('')
+
+        timer_start = time.clock()
+        coloring_gr = graph.color_greedy()
+        timer_stop = time.clock() - timer_start
+
+        graph.print_coloring(coloring_gr, timer_stop, "Greedy algorithm")
+
+        timer_start = time.clock()
+        coloring_bb = graph.color_branch_bound(aware)
+        timer_stop = time.clock() - timer_start
+
+        graph.print_coloring(coloring_bb, timer_stop, "Branch and bound")
+
+        timer_start = time.clock()
+        coloring_bf = graph.color_bruteforce(aware)
+        timer_stop = time.clock() - timer_start
+
+        graph.print_coloring(coloring_bf, timer_stop, "Simple bruteforce")
+
+        timer_start = time.clock()
+        coloring_lf = graph.color_lf()
+        timer_stop = time.clock() - timer_start
+
+        graph.print_coloring(coloring_lf, timer_stop, "LF algorithm")
+
+        timer_start = time.clock()
+        coloring_gen = graph_gen.breed_generations()
+        timer_stop = time.clock() - timer_start
+
+        graph.print_coloring(coloring_gen, timer_stop, "Genetic algorithm")
+
+        timer_start = time.clock()
+        coloring_nn = graph_nn.outer_loop(10,.75)
+        timer_stop = time.clock() - timer_start
+
+        graph.print_coloring(coloring_nn, timer_stop, "Network algorithm")
+
+specs = '''\n\nKolorowanie grafów. Możliwe algorytmy:
+    -genetyczny
+    -Browna
+    -LF...
+Wymagania: Pseudokod. Schemat: przykładowy prosty graf,\
+z optymalnym pokolorowaniem (uzyskany np bruteforce)
+dla reszty algorytmów - schemat kolejnego kroku na tym samym grafie\
+i finalny wynik (inny optymalny? suboptymalny)
+
+Nie zamieszczać tabel, wykresy proste liniowe \nPorównywać zbliżonej klasy
+algorytmy: czas dokładnych, dokładność przybliżonych
+
+instancje sprawdzające http://www.cs.put.poznan.pl/mmachowiak/instances/
+    myciel4.txt
+    queen6.txt - symetrycznie
+1. liczba  - liczba wierzchołków
+'''
