@@ -1,8 +1,9 @@
 #! /usr/bin/python3
 # -*- coding=utf8 -*-
+import argparse
 import random
 import time
-import argparse
+import sys
 from GraphUtils import *
 from GeneticColoring import GeneticColoring
 from NN import NetworkColoring
@@ -56,10 +57,11 @@ class RandomGraph(object):
         if algorithm:
             print(algorithm)
         if self.is_coloring_good(coloring):
-            print(nr_of_colors(coloring), 'colors, properly.', time, '[s]')
+            print('%d colors, properly. %f [s]'
+                  % (nr_of_colors(coloring), time))
         else:
-            print(nr_of_colors(coloring), 'colors', time, '[s], but \
-something went wrong')
+            print('%d colors %f [s], but something went wrong'
+                  % (nr_of_colors(coloring), time))
             # import pdb; pdb.set_trace()
 
     def color_greedy(self):
@@ -78,8 +80,8 @@ something went wrong')
         coloring = {vertex: 0 for vertex in nodes}  # empty
 
         if n >= 8 and aware:
-            decision = input('Attepting to color large graph, it can take few \
-hundred years. Continue? (y/n)').lower()
+            decision = get_input('Attepting to color large graph, it can take \
+few hundred years. Continue? (y/n)').lower()
             if 'n' in decision:
                 return {}  # not having free few hundred years apparently
         k_min = n
@@ -104,8 +106,8 @@ hundred years. Continue? (y/n)').lower()
         coloring = {vertex: 0 for vertex in nodes}  # empty
 
         if n > 8 and aware:
-            decision = input('Attepting to color large graph, it can take few \
-hundred years. Continue? (y/n)').lower()
+            decision = get_input('Attepting to color large graph, it can take\
+few hundred years. Continue? (y/n)').lower()
             if 'n' in decision:
                 return {}  # what a pity
 
@@ -169,65 +171,90 @@ class TestInstance(RandomGraph):
                           )
 
 
-if __name__ == "__main__":
+def test_graph(filename=None, vertex_nr=0, filling=0, seed=0, aware=False):
+    "Color given graph with all algorithms. Load it form file or generate it"
+    try:
+        graph = TestInstance(filename)
+    except TypeError:
+        return None
 
-    argvparser = argparse.ArgumentParser(description="Testing algorithms for\
-                                         graph coloring problem"
-                                         )
-    argvparser.add_argument("filename", metavar="filename", type=str,
-                            nargs="+", help="test instance file name",
-                            default=None)
-    argvparser.add_argument('-a', action='store_true',
-                            help='be aware of exact algorithms complexity. \
+    if not filename:
+        graph = RandomGraph(vertex_nr, filling, seed)
+    graph_gen = GeneticColoring(graph,
+                                graph.vertex_nr*50,   # change to adjust
+                                graph.vertex_nr*50   # speed and precision
+                                )
+    graph_nn = NetworkColoring(graph)
+
+    if len(graph.adjlist) < 10:
+        graph.print_graph()
+    else:
+        print('Coloring graph with %d vertices' % len(graph.adjlist))
+
+    print('')
+
+    timer_start = time.clock()
+    coloring_gr = graph.color_greedy()
+    timer_stop = time.clock() - timer_start
+
+    graph.print_coloring(coloring_gr, timer_stop, "Greedy algorithm")
+
+    timer_start = time.clock()
+    coloring_bb = graph.color_branch_bound(aware)
+    timer_stop = time.clock() - timer_start
+
+    graph.print_coloring(coloring_bb, timer_stop, "Branch and bound")
+
+    timer_start = time.clock()
+    coloring_bf = graph.color_bruteforce(aware)
+    timer_stop = time.clock() - timer_start
+
+    graph.print_coloring(coloring_bf, timer_stop, "Simple bruteforce")
+
+    timer_start = time.clock()
+    coloring_lf = graph.color_lf()
+    timer_stop = time.clock() - timer_start
+
+    graph.print_coloring(coloring_lf, timer_stop, "LF algorithm")
+
+    timer_start = time.clock()
+    coloring_gen = graph_gen.breed_generations()
+    timer_stop = time.clock() - timer_start
+
+    graph.print_coloring(coloring_gen, timer_stop, "Genetic algorithm")
+
+    timer_start = time.clock()
+    coloring_nn = graph_nn.outer_loop(10, .75)
+    timer_stop = time.clock() - timer_start
+
+    graph.print_coloring(coloring_nn, timer_stop, "Network algorithm")
+
+    print('')
+
+
+argvparser = argparse.ArgumentParser(description="Testing algorithms for\
+                                     graph coloring problem"
+                                     )
+argvparser.add_argument("filename", metavar="filename", type=str,
+                        nargs="+", help="test instance file name",
+                        default=None)
+argvparser.add_argument('-a', action='store_true',
+                        help='be aware of exact algorithms complexity. \
 ask for confirmation before processing large graphs.')
+
+
+if __name__ == "__main__":
+    get_input = input
+    # use raw_input() when run from Py2
+    if sys.version_info[:2] <= (2, 7):
+        get_input = raw_input
+    # parse command line args
     parsed_args = argvparser.parse_args()
 
-    for filename in argvparser.parse_args().filename:
-        aware = parsed_args.a
-        graph = TestInstance(filename)
-        graph_gen = GeneticColoring(graph,
-                                    graph.vertex_nr*50,   # change to adjust
-                                    graph.vertex_nr*50   # speed and precision
-                                    )
-        graph_nn = NetworkColoring(graph)
-        graph.print_graph()
-        print('')
-
-        timer_start = time.clock()
-        coloring_gr = graph.color_greedy()
-        timer_stop = time.clock() - timer_start
-
-        graph.print_coloring(coloring_gr, timer_stop, "Greedy algorithm")
-
-        timer_start = time.clock()
-        coloring_bb = graph.color_branch_bound(aware)
-        timer_stop = time.clock() - timer_start
-
-        graph.print_coloring(coloring_bb, timer_stop, "Branch and bound")
-
-        timer_start = time.clock()
-        coloring_bf = graph.color_bruteforce(aware)
-        timer_stop = time.clock() - timer_start
-
-        graph.print_coloring(coloring_bf, timer_stop, "Simple bruteforce")
-
-        timer_start = time.clock()
-        coloring_lf = graph.color_lf()
-        timer_stop = time.clock() - timer_start
-
-        graph.print_coloring(coloring_lf, timer_stop, "LF algorithm")
-
-        timer_start = time.clock()
-        coloring_gen = graph_gen.breed_generations()
-        timer_stop = time.clock() - timer_start
-
-        graph.print_coloring(coloring_gen, timer_stop, "Genetic algorithm")
-
-        timer_start = time.clock()
-        coloring_nn = graph_nn.outer_loop(10, .75)
-        timer_stop = time.clock() - timer_start
-
-        graph.print_coloring(coloring_nn, timer_stop, "Network algorithm")
+    for file_name in argvparser.parse_args().filename:
+        be_aware = parsed_args.a
+        test_graph(filename=file_name, aware=be_aware)
+    test_graph(vertex_nr=6, filling=0.50, seed=42, aware=be_aware)
 
 specs = '''\n\nKolorowanie grafów. Możliwe algorytmy:
     -genetyczny
