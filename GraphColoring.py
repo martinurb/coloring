@@ -9,8 +9,7 @@ from NN import NetworkColoring
 import numpy as np
 
 
-
-class RandomGraph:
+class RandomGraph(object):
     """Generates random graph of specified vertex number and filling
     represented as adjacency list"""
     def __init__(self, vertex_nr, filling, seed):
@@ -18,8 +17,8 @@ class RandomGraph:
         self.vertex_nr = vertex_nr
         self.adjlist = {vertex: [] for vertex in range(1, vertex_nr + 1)}
 
-        self.adjmatrix = np.array([[0 for _ in range(self.vertex_nr)]\
-                                       for _ in range (self.vertex_nr)])
+        self.adjmatrix = np.array([[0 for _ in range(self.vertex_nr)]
+                                  for _ in range(self.vertex_nr)])
             # vertex in test instances started from 1, so we too wont use 0
         for x in range(vertex_nr):
             for y in range(int(vertex_nr / 2)):
@@ -141,8 +140,8 @@ class TestInstance(RandomGraph):
             nr = int(instance_file[0])
             super(TestInstance, self).__init__(nr, 0, 0)
 
-            self.adjmatrix = np.array([[0 for _ in range(nr)]\
-                                       for _ in range (nr)])
+            self.adjmatrix = np.array([[0 for _ in range(nr)]
+                                       for _ in range(nr)])
 
             for line in instance_file[1:]:
                 try:
@@ -187,8 +186,8 @@ ask for confirmation before processing large graphs.')
         aware = parsed_args.a
         graph = TestInstance(filename)
         graph_gen = GeneticColoring(graph,
-                                    graph.vertex_nr*20,   # change to adjust
-                                    graph.vertex_nr*20    # speed and precision
+                                    graph.vertex_nr*50,   # change to adjust
+                                    graph.vertex_nr*50   # speed and precision
                                     )
         graph_nn = NetworkColoring(graph)
         graph.print_graph()
@@ -225,7 +224,7 @@ ask for confirmation before processing large graphs.')
         graph.print_coloring(coloring_gen, timer_stop, "Genetic algorithm")
 
         timer_start = time.clock()
-        coloring_nn = graph_nn.outer_loop(10,.75)
+        coloring_nn = graph_nn.outer_loop(10, .75)
         timer_stop = time.clock() - timer_start
 
         graph.print_coloring(coloring_nn, timer_stop, "Network algorithm")
