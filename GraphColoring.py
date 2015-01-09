@@ -21,8 +21,8 @@ class RandomGraph(object):
         self.adjmatrix = np.array([[0 for _ in range(self.vertex_nr)]
                                   for _ in range(self.vertex_nr)])
             # vertex in test instances started from 1, so we too wont use 0
-        for x in range(vertex_nr):
-            for y in range(int(vertex_nr / 2)):
+        for x in range(1, vertex_nr + 1):
+            for y in range(1, vertex_nr+1):
                 if random.random() <= filling and x != y:
                     if x in self.adjlist:
                         if y not in self.adjlist[x]:
