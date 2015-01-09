@@ -150,12 +150,14 @@ class TestInstance(RandomGraph):
                     x, y = (int(i) for i in line.split())
 
                     if x in self.adjlist:
-                        self.adjlist[x].append(y)
+                        if y not in self.adjlist[x]:
+                            self.adjlist[x].append(y)
                     else:
                         self.adjlist[x] = [y]
 
                     if y in self.adjlist:
-                        self.adjlist[y].append(x)
+                        if x not in self.adjlist[y]:
+                            self.adjlist[y].append(x)
                     else:
                         self.adjlist[y] = [x]
 
@@ -181,8 +183,8 @@ def test_graph(filename=None, vertex_nr=0, filling=0, seed=0, aware=False):
     if not filename:
         graph = RandomGraph(vertex_nr, filling, seed)
     graph_gen = GeneticColoring(graph,
-                                graph.vertex_nr*50,   # change to adjust
-                                graph.vertex_nr*50   # speed and precision
+                                200,   # change to adjust
+                                300   # speed and precision
                                 )
     graph_nn = NetworkColoring(graph)
 
